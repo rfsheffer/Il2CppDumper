@@ -2,9 +2,98 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Web.Script.Serialization;
 
 namespace Il2CppDumper
 {
+	public class GameConfigConverter : JavaScriptConverter
+	{
+		public override IEnumerable<Type> SupportedTypes
+		{
+			get { return new Type[] { typeof(GameConfig) }; }
+		}
+
+		private static object TryStringHexToNum(object value, Type numType)
+		{
+			if(value.GetType() == typeof(string))
+			{
+				string numStr = value as string;
+				int radix = 10;
+				if (numStr.StartsWith("0x"))
+				{
+					radix = 16;
+				}
+				if (numType == typeof(ulong))
+					return Convert.ToUInt64(numStr, radix);
+				else
+					return Convert.ToInt64(numStr, radix);
+			}
+			return Convert.ToUInt64(value);
+		}
+
+		public override object Deserialize(IDictionary<string, object> dictionary, Type type, JavaScriptSerializer serializer)
+		{
+			if (type == typeof(GameConfig))
+			{
+				var gameConfig = new GameConfig();
+				foreach (var pair in dictionary)
+				{
+					if (pair.Key == "CodeRegistration")
+					{
+						var codeRegSection = pair.Value as IDictionary<string, object>;
+						gameConfig.CodeRegistration = (Il2CppCodeRegistration)Deserialize(codeRegSection, typeof(Il2CppCodeRegistration), serializer);
+					}
+					else if (pair.Key == "MetadataRegistration")
+					{
+						var codeRegSection = pair.Value as IDictionary<string, object>;
+						gameConfig.MetadataRegistration = (Il2CppMetadataRegistration)Deserialize(codeRegSection, typeof(Il2CppMetadataRegistration), serializer);
+					}
+					else if (pair.Key == "CodeRegistrationOffset" || pair.Key == "MetadataRegistrationOffset")
+					{
+						type.GetField(pair.Key).SetValue(gameConfig, TryStringHexToNum(pair.Value, typeof(ulong)));
+					}
+					else
+					{
+						var fieldInfo = type.GetField(pair.Key);
+						if (fieldInfo != null)
+						{
+							fieldInfo.SetValue(gameConfig, pair.Value);
+						}
+					}
+				}
+				return gameConfig;
+			}
+			else
+			{
+				object typeToFill = null;
+				if(type == typeof(Il2CppMetadataRegistration))
+				{
+					typeToFill = new Il2CppMetadataRegistration();
+				}
+				else if (type == typeof(Il2CppCodeRegistration))
+				{
+					typeToFill = new Il2CppCodeRegistration();
+				}
+				if (typeToFill != null)
+				{
+					foreach (var pair in dictionary)
+					{
+						var field = type.GetField(pair.Key);
+						field.SetValue(typeToFill, TryStringHexToNum(pair.Value, field.FieldType));
+					}
+					return typeToFill;
+				}
+			}
+
+			throw new NotImplementedException();
+		}
+
+		public override IDictionary<string, object> Serialize(object obj, JavaScriptSerializer serializer)
+		{
+			throw new NotImplementedException();
+		}
+	}
+
 	// Explicit game config for automation scenarios
 	class GameConfig
 	{

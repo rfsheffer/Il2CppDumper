@@ -14,7 +14,7 @@ namespace Il2CppDumper
     {
         private static Metadata metadata;
         private static Il2Cpp il2cpp;
-        private static Config config = new JavaScriptSerializer().Deserialize<Config>(File.ReadAllText(Application.StartupPath + Path.DirectorySeparatorChar + @"config.json"));
+        private static Config config = null;
         private static Dictionary<Il2CppMethodDefinition, string> methodModifiers = new Dictionary<Il2CppMethodDefinition, string>();
         private static Dictionary<Il2CppTypeDefinition, int> typeDefImageIndices = new Dictionary<Il2CppTypeDefinition, int>();
 
@@ -27,7 +27,11 @@ namespace Il2CppDumper
         [STAThread]
         static void Main(string[] args)
         {
-            byte[] il2cppBytes = null;
+			var jsSerializer = new JavaScriptSerializer();
+			jsSerializer.RegisterConverters(new JavaScriptConverter[] { new GameConfigConverter() });
+			config = jsSerializer.Deserialize<Config>(File.ReadAllText(Application.StartupPath + Path.DirectorySeparatorChar + @"config.json"));
+
+			byte[] il2cppBytes = null;
             byte[] metadataBytes = null;
 
             if (args.Length == 1)

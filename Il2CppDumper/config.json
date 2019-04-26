@@ -14,24 +14,24 @@
     "Vacation Simulator Ver1": {
       "EngineVersion": "2018.3",
       "MetadataRegistration": {
-        "genericClassesCount": 26633,
-        "genericClasses": 6505870160,
-        "genericInstsCount": 3976,
-        "genericInsts": 6509237472,
-        "genericMethodTableCount": 30890,
-        "genericMethodTable": 6506083232,
-        "typesCount": 57158,
-        "types": 6503424128,
-        "methodSpecsCount": 31985,
-        "methodSpecs": 6505486336,
-        "fieldOffsetsCount": 10111,
-        "fieldOffsets": 6516019632,
-        "typeDefinitionsSizesCount": 10111,
-        "typeDefinitionsSizes": 6515938736,
-        "metadataUsagesCount": 36401,
-        "metadataUsages": 6504032832
+        "genericClassesCount": "0x6809",
+        "genericClasses": "0x183C7B350",
+        "genericInstsCount": "0xF88",
+        "genericInsts": "0x183FB14E0",
+        "genericMethodTableCount": "0x78AA",
+        "genericMethodTable": "0x183CAF3A0",
+        "typesCount": "0xDF46",
+        "types": "0x183A26080",
+        "methodSpecsCount": "0x7CF1",
+        "methodSpecs": "0x183C1D800",
+        "fieldOffsetsCount": "0x277F",
+        "fieldOffsets": "0x1846291B0",
+        "typeDefinitionsSizesCount": "0x277F",
+        "typeDefinitionsSizes": "0x1846155B0",
+        "metadataUsagesCount": "0x8E31",
+        "metadataUsages": "0x183ABAA40"
       },
-      "CodeRegistrationOffset": 6511682592
+      "CodeRegistrationOffset": "0x184206420"
     }
   }
 }
