@@ -45,6 +45,7 @@ namespace Il2CppDumper
                 return;
             }
 
+			string binaryDirName = "";
             if (args.Length == 2)
             {
                 var file1 = File.ReadAllBytes(args[0]);
@@ -52,13 +53,14 @@ namespace Il2CppDumper
                 if (BitConverter.ToUInt32(file1, 0) == 0xFAB11BAF)
                 {
                     il2cppBytes = file2;
-                    metadataBytes = file1;
-                }
+					binaryDirName = new FileInfo(args[1]).Directory.Name;
+				}
                 else if (BitConverter.ToUInt32(file2, 0) == 0xFAB11BAF)
                 {
                     il2cppBytes = file1;
                     metadataBytes = file2;
-                }
+					binaryDirName = new FileInfo(args[0]).Directory.Name;
+				}
             }
             if (il2cppBytes == null)
             {
@@ -67,7 +69,8 @@ namespace Il2CppDumper
                 if (ofd.ShowDialog() == DialogResult.OK)
                 {
                     il2cppBytes = File.ReadAllBytes(ofd.FileName);
-                    ofd.Filter = "global-metadata|global-metadata.dat";
+					binaryDirName = new FileInfo(ofd.FileName).Directory.Name;
+					ofd.Filter = "global-metadata|global-metadata.dat";
                     if (ofd.ShowDialog() == DialogResult.OK)
                     {
                         metadataBytes = File.ReadAllBytes(ofd.FileName);
@@ -84,7 +87,12 @@ namespace Il2CppDumper
             }
             try
             {
-                Init(il2cppBytes, metadataBytes);
+				GameConfig gameConfig = new GameConfig();
+				if(config.Games.ContainsKey(binaryDirName))
+				{
+					gameConfig = config.Games[binaryDirName];
+				}
+				Init(il2cppBytes, metadataBytes, gameConfig);
                 Dump();
             }
             catch (Exception e)
@@ -95,7 +103,7 @@ namespace Il2CppDumper
             Console.ReadKey(true);
         }
 
-        private static void Init(byte[] il2cppBytes, byte[] metadataBytes)
+        private static void Init(byte[] il2cppBytes, byte[] metadataBytes, GameConfig gameConfig)
         {
             var sanity = BitConverter.ToUInt32(metadataBytes, 0);
             if (sanity != 0xFAB11BAF)
@@ -106,8 +114,12 @@ namespace Il2CppDumper
             var metadataVersion = BitConverter.ToInt32(metadataBytes, 4);
             if (metadataVersion == 24)
             {
-                Console.WriteLine("Input Unity version (Just enter the first two numbers eg. *.*, ****.*): ");
-                var str = Console.ReadLine();
+				string str = gameConfig.EngineVersion;
+				if (string.IsNullOrEmpty(str))
+				{
+                	Console.WriteLine("Input Unity version (Just enter the first two numbers eg. *.*, ****.*): ");
+					str = Console.ReadLine();
+				}
                 try
                 {
                     var strs = Array.ConvertAll(str.Split('.'), int.Parse);
@@ -185,8 +197,12 @@ namespace Il2CppDumper
                     break;
             }
 
-            Console.WriteLine("Select Mode: 1.Manual 2.Auto 3.Auto(Plus) 4.Auto(Symbol)");
-            var modeKey = Console.ReadKey(true);
+			ConsoleKeyInfo modeKey = new ConsoleKeyInfo('1', ConsoleKey.NumPad1, false, false, false);
+			if (!gameConfig.IsValid())
+			{
+				Console.WriteLine("Select Mode: 1.Manual 2.Auto 3.Auto(Plus) 4.Auto(Symbol)");
+				modeKey = Console.ReadKey(true);
+			}
             var version = config.ForceIl2CppVersion ? config.ForceVersion : metadata.version;
             Console.WriteLine("Initializing il2cpp file...");
             if (isNSO)
@@ -219,13 +235,33 @@ namespace Il2CppDumper
                 switch (modeKey.KeyChar)
                 {
                     case '1': //Manual
-                        Console.Write("Input CodeRegistration: ");
-                        var codeRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
-                        Console.Write("Input MetadataRegistration: ");
-                        var metadataRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
-                        il2cpp.Init(codeRegistration, metadataRegistration);
-                        flag = true;
-                        break;
+					{
+						ulong codeRegistration = 0;
+						ulong metadataRegistration = 0;
+						if (gameConfig.IsValid())
+						{
+							codeRegistration = gameConfig.CodeRegistrationOffset;
+							metadataRegistration = gameConfig.MetadataRegistrationOffset;
+							if(gameConfig.CodeRegistration != null)
+							{
+								il2cpp.SetCodeRegistration(gameConfig.CodeRegistration);
+							}
+							if (gameConfig.MetadataRegistration != null)
+							{
+								il2cpp.SetMetadataRegistration(gameConfig.MetadataRegistration);
+							}
+						}
+						else
+						{
+							Console.Write("Input CodeRegistration: ");
+							codeRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
+							Console.Write("Input MetadataRegistration: ");
+							metadataRegistration = Convert.ToUInt64(Console.ReadLine(), 16);
+						}
+						il2cpp.Init(codeRegistration, metadataRegistration);
+						flag = true;
+						break;
+					}
                     case '2': //Auto
                         flag = il2cpp.Search();
                         break;
@@ -243,8 +279,11 @@ namespace Il2CppDumper
             }
             catch
             {
-                throw new Exception("ERROR: Can't use this mode to process file, try another mode.");
-            }
+				if (gameConfig.IsValid())
+					throw new Exception("ERROR: The supplied game configuration could not produce a dump. Please update it or remove it.");
+				else
+					throw new Exception("ERROR: Can't use this mode to process file, try another mode.");
+			}
         }
 
         private static void Dump()

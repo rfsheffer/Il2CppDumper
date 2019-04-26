@@ -5,11 +5,11 @@ using System.Linq;
 
 namespace Il2CppDumper
 {
-    public abstract class Il2Cpp : MyBinaryReader
-    {
-        private Il2CppMetadataRegistration pMetadataRegistration;
-        private Il2CppCodeRegistration pCodeRegistration;
-        public ulong[] methodPointers;
+	public abstract class Il2Cpp : MyBinaryReader
+	{
+		private Il2CppMetadataRegistration pMetadataRegistration;
+		private Il2CppCodeRegistration pCodeRegistration;
+		public ulong[] methodPointers;
         public ulong[] genericMethodPointers;
         public ulong[] invokerPointers;
         public ulong[] customAttributeGenerators;
@@ -52,8 +52,14 @@ namespace Il2CppDumper
 
         public virtual void Init(ulong codeRegistration, ulong metadataRegistration)
         {
-            pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
-            pMetadataRegistration = MapVATR<Il2CppMetadataRegistration>(metadataRegistration);
+			if (pCodeRegistration == null)
+			{
+				pCodeRegistration = MapVATR<Il2CppCodeRegistration>(codeRegistration);
+			}
+			if (pMetadataRegistration == null)
+			{
+				pMetadataRegistration = MapVATR<Il2CppMetadataRegistration>(metadataRegistration);
+			}
             if (is32Bit)
             {
                 genericInsts = Array.ConvertAll(MapVATR<uint>(pMetadataRegistration.genericInsts, pMetadataRegistration.genericInstsCount), x => MapVATR<Il2CppGenericInst>(x));
@@ -238,5 +244,15 @@ namespace Il2CppDumper
                 return methodPointer;
             }
         }
-    }
+
+		// Explicit settings for metadata and codereg to override before calling Init.
+		public void SetMetadataRegistration(Il2CppMetadataRegistration metadataRegistration)
+		{
+			pMetadataRegistration = metadataRegistration;
+		}
+		public void SetCodeRegistration(Il2CppCodeRegistration codeRegistration)
+		{
+			pCodeRegistration = codeRegistration;
+		}
+	}
 }
